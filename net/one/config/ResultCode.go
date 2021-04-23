@@ -16,6 +16,7 @@ var PICTURE_FORMAT_ERROR = codeModel{300_003, "不正确的图片格式"}
 var TOKEN_INVALID_ERROR = codeModel{300_004, "Token Invalid or expired"}
 var WX_CODE_ERROR = codeModel{300_005, "Token Invalid or expired"}
 var NIL_TOKEN_ERROR = codeModel{300_006, "空的Token参数"}
+var NOMORE_DATA_ERROR = codeModel{300_007, "已经没有更多的数据了"}
 
 // ##########400_000 前端异常##########
 
