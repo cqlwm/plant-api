@@ -11,7 +11,7 @@ const (
 	UserHandler2Login = UserHandlerBase + "/login"
 
 	// ######################
-	DistinguishHandlerBase  = base + "/tool/distinguish"
-	DistinguishHandlerQuery = DistinguishHandlerBase + "/query"
-	DistinguishHandlerFile  = DistinguishHandlerBase + "/file"
+	DistinguishHandlerBase              = base + "/tool/distinguish"
+	DistinguishHandlerQuery             = DistinguishHandlerBase + "/query"
+	DistinguishHandler2HistoryRecording = DistinguishHandlerBase + "/HistoryRecording"
 )
