@@ -1,18 +1,25 @@
 package crawling
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"log"
 	"net/http"
 	"plant-api/net/one/config"
+	"plant-api/net/one/entry"
 	"plant-api/net/one/util"
+	"strings"
+	"time"
 )
+
+var snowflakeIdWorker = util.SnowflakeIdWorker{}
 
 // 定时爬虫
 // 定时爬取信息到数据库
 // https://www.my478.com/html/list/ask/
 // http://www.86362.com/
+// TODO 待添加定时器
 func IntervalAskUrl() {
 	url := `https://www.my478.com/html/list/ask/`
 	resp, err := http.Get(url)
@@ -20,6 +27,7 @@ func IntervalAskUrl() {
 		log.Println("IntervalAskUrl 异常请求...")
 		return
 	}
+	defer resp.Body.Close()
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
@@ -27,28 +35,25 @@ func IntervalAskUrl() {
 		return
 	}
 
+	now := date()
 	doc.Find("body > div.web > div.list-r.list-z > ul").
 		Each(func(i int, selection *goquery.Selection) {
-			nodeA := selection.Find("a")
-			href, _ := nodeA.Attr("href")
-			text := nodeA.Text()
-
+			hrefA, _ := selection.Find("a").Attr("href")
 			span := selection.Find("span").Text()
-			fmt.Println(href, text, span)
+			if strings.Index(span, now) != -1 {
+				go detailAskUrl("https://www.my478.com/" + hrefA)
+			}
 		})
-
-	//详细页
-	// https://www.my478.com/html/20210423/373659.html
-	// /html/20210423/373659.html
 }
 
 // 爬取详细页
-func DetailAskUrl(detail string) {
+func detailAskUrl(detail string) {
 	resp, err := http.Get(detail)
 	if err != nil {
 		log.Println("Detail 异常请求...")
 		return
 	}
+	defer resp.Body.Close()
 
 	// doc
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
@@ -60,30 +65,48 @@ func DetailAskUrl(detail string) {
 	content := doc.Find("body > div.web > div.moban")
 	title := content.Find("h1").Text()
 	date := content.Find(".date").Text()
+
+	id := snowflakeIdWorker.NextId()
+	article := entry.ArticleDB{
+		Id:    id,
+		Title: title,
+		Date:  date,
+	}
+
+	paragraph := make([]string, 0)
 	intro := content.Find(".intro").Text()
+	paragraph = append(paragraph, intro)
+	// 图片
 	originSrcImage, _ := content.Find(".center > img").Attr("src")
-	contentArr := make([]string, 0)
-	content.Find(".content > p").Each(func(i int, selection *goquery.Selection) {
-		contentArr = append(contentArr, selection.Text())
-	})
-
-	fmt.Println(title)
-	fmt.Println(date)
-	fmt.Println(intro)
-
-	// 保存在本地
 	imgSuffix, ok := util.IsImage(originSrcImage)
-	// TODO 不适用UUID，使用雪花ID代替图片名称
 	newFileName := ""
 	if ok {
 		down := `https://www.my478.com/` + originSrcImage
-		newFileName = util.Uuid(originSrcImage) + imgSuffix
+		newFileName = fmt.Sprintf("%d%s", article.Id, imgSuffix)
 		save := config.SearchByImage + newFileName
-		fmt.Printf("down: %s, save: %s\n", down, save)
-		util.DownImage(save, down)
+		util.DownImage2(save, down)
+		paragraph = append(paragraph, config.ImageTag+config.SearchByImageHttpUrl+newFileName)
 	}
+	// 正文
+	content.Find(".content > p").Each(func(i int, selection *goquery.Selection) {
+		paragraph = append(paragraph, selection.Text())
+	})
+	pJson, _ := json.Marshal(paragraph)
+	article.Paragraph = string(pJson)
+	article.Original = detail
 
-	for k, v := range contentArr {
-		fmt.Println(k, v)
-	}
+	b, _ := json.Marshal(article)
+	//fmt.Println(string(b))
+
+	db := config.DataBase
+	tx := db.Save(&article)
+	i := tx.RowsAffected
+	fmt.Println(i, string(b))
+}
+
+// date
+func date() string {
+	year, month, day := time.Now().Date()
+	nowString := fmt.Sprintf("%d-%02d-%d", year, month, day)
+	return nowString
 }

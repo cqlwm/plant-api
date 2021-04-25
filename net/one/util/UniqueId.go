@@ -52,7 +52,7 @@ type SnowflakeIdWorker struct {
 	mutex         sync.Mutex // 添加互斥锁 确保并发安全
 	lastTimestamp int64      // 上次生成ID的时间截
 	workerId      int64      // 工作机器ID(0~31)
-	datacenterId  int64      //数据中心ID(0~31)
+	datacenterId  int64      // 数据中心ID(0~31)
 	sequence      int64      // 毫秒内序列(0~4095)
 }
 
@@ -80,7 +80,7 @@ func createWorker(wId int64, dId int64) (*SnowflakeIdWorker, error) {
 /*
  * 获取ID
  */
-func (w *SnowflakeIdWorker) nextId() int64 {
+func (w *SnowflakeIdWorker) NextId() int64 {
 	// 保障线程安全 加锁
 	w.mutex.Lock()
 	// 生成完成后 解锁
@@ -139,7 +139,7 @@ func main() {
 	// 并发 goroutine ID生成
 	for i := 0; i < count; i++ {
 		go func() {
-			id := worker.nextId()
+			id := worker.NextId()
 			ch <- id
 		}()
 	}

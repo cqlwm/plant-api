@@ -12,7 +12,7 @@ var DataBase *gorm.DB
 
 var autoMigrate = []interface{}{
 	&entry.SysUser{}, &entry.Botany{}, &entry.PestTable{},
-	&entry.IdentifyLog{},
+	&entry.IdentifyLog{}, &entry.ArticleDB{},
 }
 
 func Init() (bool, error) {

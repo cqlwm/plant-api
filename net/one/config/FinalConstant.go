@@ -8,13 +8,17 @@ const (
 
 	// 生产环境
 	ImageSavePathConstant = `/usr/local/nginx/html/plant/image/item/`
-	ReUrlImage            = `http://graceful.top/plant/image/item/`
+	ReUrlImage            = `https://graceful.top/plant/image/item/`
 	// 爬取每日最新资讯，图片保存路径；对应以图搜图的功能；
 	// SearchByImage = `/usr/local/nginx/html/plant/image/searchby/`
+	SearchByImageHttpUrl = `https://graceful.top/plant/image/searchby/`
 
 	Port = ":9091"
 
 	// MongoDB Key
 	WeedKey  = "WeedKey"
 	WeedColl = "weeds"
+
+	// 定时文章爬虫
+	ImageTag = "ThisImageTag:"
 )
