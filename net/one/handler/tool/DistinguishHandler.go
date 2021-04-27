@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-const savePath string = config.ImageSavePathConstant
+var savePath = config.ImageSavePathConstant
 
 // handler路由配置
 func DistinguishHandler(e *gin.Engine) {
