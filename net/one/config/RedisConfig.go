@@ -39,6 +39,7 @@ func InitRedisClient() (err error) {
 
 func SaveKV(key string, value string, exp time.Duration) error {
 	ctx := context.Background()
+	exp = exp * 1000 * 1000 * 1000
 	err := rdb.Set(ctx, key, value, exp).Err()
 	if err != nil {
 		return err
@@ -52,7 +53,7 @@ func SaveKJson(key string, value interface{}, exp time.Duration) error {
 		return err
 	}
 	valString := string(b)
-	err = SaveKV(key, valString, 0)
+	err = SaveKV(key, valString, exp)
 	if err != nil {
 		return err
 	}
