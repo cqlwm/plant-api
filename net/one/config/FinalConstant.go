@@ -2,16 +2,23 @@ package config
 
 import "runtime"
 
+var finalBase1 = `/root/plant/`
+var finalBase2 = `/usr/local/nginx/html/plant/`
+var urlBase = `https://graceful.top/`
+
+// 城市JSON文件
+var CityJsonPath = `/root/plant/staticfile/city.json`
+
 // 分词词库路径
-var SegmenterLoadDictionary = "/root/plant/staticfile/dictionary.txt"
+var SegmenterLoadDictionary = finalBase1 + "staticfile/dictionary.txt"
 
 // 临时图片文件：本地、网络地址
-var ImageSavePathConstant = `/usr/local/nginx/html/plant/image/item/`
-var ReUrlImage = `https://graceful.top/plant/image/item/`
+var ImageSavePathConstant = finalBase2 + `image/item/`
+var ReUrlImage = urlBase + `plant/image/item/`
 
 // 爬取每日最新资讯，图片保存路径；对应以图搜图的功能；
-var SearchByImage = `/usr/local/nginx/html/plant/image/searchby/`
-var SearchByImageHttpUrl = `https://graceful.top/plant/image/searchby/`
+var SearchByImage = finalBase2 + `image/searchby/`
+var SearchByImageHttpUrl = urlBase + `plant/image/searchby/`
 
 // 端口号
 var Port = ":9091"
@@ -39,5 +46,7 @@ func OsLoad() {
 		SearchByImage = winPath + `\searchby\`
 		// 分词词库路径
 		SegmenterLoadDictionary = winPath + `\dictionary.txt`
+		// 城市JSON文件
+		CityJsonPath = `net/one/config/city.json`
 	}
 }

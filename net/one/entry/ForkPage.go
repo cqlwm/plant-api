@@ -28,6 +28,30 @@ func (fp *ForkPage) Set(current int, size int, total int) {
 	fp.Over = int(ceil)
 }
 
+// start
+func (fp *ForkPage) Start() int {
+	start := (fp.Current - 1) * fp.PageSize
+	if start > fp.Total {
+		return fp.Total
+	}
+	return start
+}
+
+// end
+func (fp *ForkPage) End() int {
+	end := fp.Start() + fp.PageSize
+	return end
+}
+
+// end
+func (fp *ForkPage) NoOverflowEnd() int {
+	end := fp.Start() + fp.PageSize
+	if end > fp.Total {
+		end = fp.Total
+	}
+	return end
+}
+
 func (fp *ForkPage) Overflow() bool {
 	if fp.Current > fp.Over {
 		return true

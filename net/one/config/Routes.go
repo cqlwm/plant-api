@@ -18,4 +18,9 @@ const (
 	// ###################### 文章搜搜
 	ArticleHandlerBase        = base + "/article"
 	DistinguishHandler2search = ArticleHandlerBase + "/search"
+
+	// ###################### 天气
+	WeatherHandlerBase    = base + "/weather"
+	WeatherHandler2query  = WeatherHandlerBase + "/query"
+	WeatherHandler2simple = WeatherHandlerBase + "/simple"
 )

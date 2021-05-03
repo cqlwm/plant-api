@@ -1,8 +1,8 @@
 package article
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
+	"mime/multipart"
 	"plant-api/net/one/config"
 	"plant-api/net/one/service/impl/article"
 	"plant-api/net/one/util"
@@ -16,64 +16,88 @@ func ArticleHandler(e *gin.Engine) {
 
 var service = article.ArticleService{}
 
-// 搜索文章
-func search(c *gin.Context) {
-	// TODO 1.根据类型判断是图搜还是词搜
-	// TODO 2.获取图片ids，相似度排序 前100张
-	// TODO 3.生成分页ID组、SearchID、存入Redis
-	// TODO 4.将第一个ID组作为结果集返回、并为前端生成分页信息
+type searchForm struct {
+	// 1 图片；2 文字; 3 id
+	pwd      int
+	isErr    bool
+	errInfo  config.CM
+	searchId string
+	page     int
+	file     *multipart.FileHeader
+	keyword  string
+}
 
-	// 默认图搜
-	ts := false
+// 参数获取
+func searchParam(c *gin.Context) *searchForm {
+	resultForm := searchForm{}
 
 	form, err := c.MultipartForm()
 	if err != nil {
-		// 表单提交异常
-		return
+		resultForm.isErr = true
+		resultForm.errInfo = &config.REQ_FORM_ERROR
+		return &resultForm
 	}
 
-	var searchId = ""
-	if len(form.Value["searchId"]) != 0 {
-		searchId = form.Value["searchId"][0]
-	}
-
-	var page = 1
+	resultForm.page = 1
 	if len(form.Value["page"]) != 0 {
-		page, err = strconv.Atoi(form.Value["page"][0])
+		page, err := strconv.Atoi(form.Value["page"][0])
 		if err != nil {
-			config.Error2(c, "张林康页码用数字")
-			return
+			resultForm.isErr = true
+			resultForm.errInfo = &config.PAGE_ERROR
+			return &resultForm
+		}
+		if page <= 0 {
+			page = 1
+		}
+		resultForm.page = page
+	}
+
+	if len(form.Value["searchId"]) != 0 {
+		resultForm.searchId = form.Value["searchId"][0]
+		if len(resultForm.searchId) > 0 {
+			resultForm.pwd = 3
+			return &resultForm
 		}
 	}
 
 	file := form.File["file"]
-	if len(file) == 0 {
-		ts = true
+	if len(file) != 0 {
+		resultForm.pwd = 1
+		resultForm.file = file[0]
+		resultForm.pwd = 1
+		return &resultForm
 	}
-
-	if ts {
-		// 关键词搜索
-		valueArr := form.Value["searchText"]
-		if len(valueArr) == 0 {
-			config.Error2(c, "参数有误")
-			return
-		}
-		fmt.Println(valueArr[0])
-		participle := util.SafeParticiple(valueArr[0])
-		s, dbs := service.KeyFind(searchId, participle, page)
-
-		resultOver := make(map[string]interface{})
-		resultOver["searchId"] = s
-		resultOver["article"] = dbs
-
-		config.Ok2(c, resultOver)
-		return
+	// 关键词搜索
+	valueArr := form.Value["searchText"]
+	if len(valueArr) == 0 {
+		resultForm.isErr = true
+		resultForm.errInfo = &config.Pricture_WORD_ERROR
+		return &resultForm
 	}
+	resultForm.pwd = 2
+	resultForm.keyword = valueArr[0]
 
-	img := file[0]
+	return &resultForm
+}
+
+// 词搜索
+func searchWord(searchId string, searchText string, page int) map[string]interface{} {
+	participle := util.SafeParticiple(searchText)
+	s, dbs, forkPage := service.KeyFind(searchId, participle, page)
+
+	resultOver := make(map[string]interface{})
+	resultOver["searchId"] = s
+	resultOver["article"] = dbs
+	resultOver["page"] = forkPage
+
+	return resultOver
+}
+
+// 图搜索
+func searchPicture(c *gin.Context, searchId string, img *multipart.FileHeader, page int) {
 	suffix, isImage := util.IsImage(img.Filename)
 	if !isImage {
-		config.Error2(c, config.PICTURE_FORMAT_ERROR.Message())
+		config.Error(c, &config.PICTURE_FORMAT_ERROR, nil)
 		return
 	}
 
@@ -83,12 +107,56 @@ func search(c *gin.Context) {
 	_ = c.SaveUploadedFile(img, uploadSave)
 
 	ids, err := util.SearchByImage(uploadSave)
+	if err != nil {
+		config.Error(c, &config.SERVER_ERROR, nil)
+		return
+	}
 
 	// 接受文件或关键词
-	s, dbs := service.Find(searchId, ids, page)
+	s, dbs, forkpage := service.FindPicture(ids, page)
 
 	resultOver := make(map[string]interface{})
 	resultOver["searchId"] = s
 	resultOver["article"] = dbs
+	resultOver["forkpage"] = forkpage
 	config.Ok2(c, resultOver)
 }
+
+// 图搜索
+func searchById(searchId string, page int) map[string]interface{} {
+	dbs, forkPage := service.FindById(searchId, page)
+	resultOver := make(map[string]interface{})
+	resultOver["searchId"] = searchId
+	resultOver["article"] = dbs
+	resultOver["page"] = forkPage
+	return resultOver
+}
+
+// 资讯搜索
+func search(c *gin.Context) {
+	param := searchParam(c)
+
+	if param.isErr {
+		config.Error(c, param.errInfo, nil)
+		return
+	}
+	if param.pwd == 3 {
+		seas := searchById(param.searchId, param.page)
+		config.Ok2(c, seas)
+		return
+	}
+	// 图
+	if param.pwd == 1 {
+		searchPicture(c, param.searchId, param.file, param.page)
+		return
+	}
+	// 词
+	if param.pwd == 2 {
+		words := searchWord(param.searchId, param.keyword, param.page)
+		config.Ok2(c, words)
+		return
+	}
+	config.Error(c, &config.PARAM_ERROR, nil)
+}
+
+//

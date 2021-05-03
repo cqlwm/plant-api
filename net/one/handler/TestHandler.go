@@ -1,13 +1,10 @@
 package handler
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"plant-api/net/one/config"
 	"plant-api/net/one/crawling"
 	"plant-api/net/one/entry"
-	"plant-api/net/one/service/impl/article"
 	"plant-api/net/one/service/impl/logs"
 )
 
@@ -72,10 +69,10 @@ func IntervalAskUrlTest(c *gin.Context) {
 
 // 文章测试
 func wzcs(c *gin.Context) {
-	i := []int{835519807167135744, 835519806932254720}
-
-	service := article.ArticleService{}
-	s, dbs := service.Find("6636feb4dec7395ca65806e87a5fe278", i, 1)
-	idsByte, _ := json.Marshal(dbs)
-	fmt.Println(s, string(idsByte))
+	//i := []int{835519807167135744, 835519806932254720}
+	//
+	//service := article.ArticleService{}
+	//s, dbs, _ := service.Find("6636feb4dec7395ca65806e87a5fe278", i, 1)
+	//idsByte, _ := json.Marshal(dbs)
+	//fmt.Println(s, string(idsByte))
 }

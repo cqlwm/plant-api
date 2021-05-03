@@ -13,26 +13,18 @@ import (
 
 type ArticleService struct{}
 
-var pageSize = 15
+var pageSize = 5
 
 // 图搜
-func (as *ArticleService) Find(searchID string, ids []int, page int) (string, []entry.ArticleDB) {
-	if len(searchID) != 0 {
-		findIds := make([]entry.ArticleDB, 0)
-		err := config.GetJson(config.ArticleIds+searchID, &findIds)
-		if err == nil {
-			return searchID, findIds
-		}
-		fmt.Println(err)
-	}
-
-	byIds := selectArticleByIds(ids, page)
-	searchID = buildSearchID(byIds)
-
-	return searchID, byIds
+func (as *ArticleService) FindPicture(ids []int, page int) (string, []entry.ArticleDB, entry.ForkPage) {
+	byIds, forkPage := selectArticleByIds(ids, page)
+	searchID := buildSearchID(byIds)
+	return searchID, byIds, forkPage
 }
 
-func (as *ArticleService) KeyFind(searchID string, keywords []string, page int) (string, []entry.ArticleDB) {
+// 词搜
+func (as *ArticleService) KeyFind(searchID string, keywords []string, page int) (
+	string, []entry.ArticleDB, entry.ForkPage) {
 
 	word := make([]entry.ArticleDB, 0)
 	if len(searchID) != 0 {
@@ -49,6 +41,8 @@ func (as *ArticleService) KeyFind(searchID string, keywords []string, page int) 
 
 	uuid := buildSearchID(word)
 
+	log.Println(len(word), page)
+
 	var start = (page - 1) * pageSize
 	var end = start + pageSize
 
@@ -60,33 +54,35 @@ func (as *ArticleService) KeyFind(searchID string, keywords []string, page int) 
 		end = forkPage.Total
 	}
 
-	return uuid, word[start:end]
+	log.Println(start, end)
+
+	return uuid, word[start:end], forkPage
 
 }
 
-type artList []articleSuitability
-
-func (I artList) Len() int {
-	return len(I)
-}
-func (I artList) Less(i, j int) bool {
-	return I[i].Sui > I[j].Sui
-}
-func (I artList) Swap(i, j int) {
-	I[i], I[j] = I[j], I[i]
-}
-
-type articleSuitability struct {
-	Sui     int
-	Article entry.ArticleDB
+// SearchId
+func (as *ArticleService) FindById(searchID string, page int) ([]entry.ArticleDB, *entry.ForkPage) {
+	if len(searchID) != 0 {
+		findIds := make([]entry.ArticleDB, 0)
+		err := config.GetJson(config.ArticleIds+searchID, &findIds)
+		if err == nil {
+			forkPage := entry.ForkPage{}
+			forkPage.Set(page, pageSize, len(findIds))
+			return findIds[forkPage.Start():forkPage.NoOverflowEnd()], &forkPage
+		}
+		fmt.Println(err)
+	}
+	return nil, nil
 }
 
 // 数据库查找
-func selectArticleByIds(ids []int, page int) []entry.ArticleDB {
+func selectArticleByIds(ids []int, page int) ([]entry.ArticleDB, entry.ForkPage) {
 	forkPage := entry.ForkPage{}
 	forkPage.Set(page, pageSize, len(ids))
 
-	startIndex := (page - 1) * pageSize
+	if forkPage.Overflow() {
+		return make([]entry.ArticleDB, 0), forkPage
+	}
 
 	id2match := map[int]int{}
 	arrArticleDB := make([]entry.ArticleDB, 0)
@@ -95,11 +91,7 @@ func selectArticleByIds(ids []int, page int) []entry.ArticleDB {
 	sql2 := `where id in `
 	sql3 := "("
 
-	end := startIndex + pageSize
-	if end > len(ids) {
-		end = len(ids)
-	}
-	for k, v := range ids[startIndex:end] {
+	for k, v := range ids[forkPage.Start():forkPage.End()] {
 		sql3 = fmt.Sprintf("%s%v,", sql3, v)
 		id2match[v] = k
 		arrArticleDB = append(arrArticleDB, entry.ArticleDB{})
@@ -111,7 +103,7 @@ func selectArticleByIds(ids []int, page int) []entry.ArticleDB {
 	rows, err := db.Debug().Raw(sql).Rows()
 	if err != nil {
 		log.Println("SQL执行异常...")
-		return nil
+		return nil, forkPage
 	}
 	defer rows.Close()
 
@@ -123,7 +115,7 @@ func selectArticleByIds(ids []int, page int) []entry.ArticleDB {
 			arrArticleDB[indexKey] = article
 		}
 	}
-	return arrArticleDB
+	return arrArticleDB, forkPage
 }
 
 // 关键词分页查找
@@ -181,4 +173,34 @@ func buildSearchID(adb interface{}) string {
 		log.Println(err)
 	}
 	return uuid
+}
+
+// 获取从缓存中所有
+func (as *ArticleService) SearchID(searchID string) []entry.ArticleDB {
+	if len(searchID) != 0 {
+		findIds := make([]entry.ArticleDB, 0)
+		err := config.GetJson(config.ArticleIds+searchID, &findIds)
+		if err == nil {
+			return findIds
+		}
+		fmt.Println(err)
+	}
+	return nil
+}
+
+type artList []articleSuitability
+
+func (I artList) Len() int {
+	return len(I)
+}
+func (I artList) Less(i, j int) bool {
+	return I[i].Sui > I[j].Sui
+}
+func (I artList) Swap(i, j int) {
+	I[i], I[j] = I[j], I[i]
+}
+
+type articleSuitability struct {
+	Sui     int
+	Article entry.ArticleDB
 }

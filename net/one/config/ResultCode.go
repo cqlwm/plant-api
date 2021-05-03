@@ -17,6 +17,9 @@ var TOKEN_INVALID_ERROR = codeModel{300_004, "Token Invalid or expired"}
 var WX_CODE_ERROR = codeModel{300_005, "Token Invalid or expired"}
 var NIL_TOKEN_ERROR = codeModel{300_006, "空的Token参数"}
 var NOMORE_DATA_ERROR = codeModel{300_007, "已经没有更多的数据了"}
+var REQ_FORM_ERROR = codeModel{300_008, "请使用表单提交"}
+var PAGE_ERROR = codeModel{300_009, "页码请使用整数"}
+var Pricture_WORD_ERROR = codeModel{300_010, "图搜词搜必选其一"}
 
 // ##########400_000 前端异常##########
 

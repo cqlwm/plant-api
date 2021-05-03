@@ -18,17 +18,18 @@ import (
 	"plant-api/net/one/entry"
 	"plant-api/net/one/util"
 	"reflect"
-	"runtime"
 	"strings"
 )
 
-func main() {
+func main00() {
 	//participle := util.SafeParticiple("板栗果仁腐烂是什么病害，怎么防治？")
 	//for k, v := range participle {
 	//	fmt.Println(k, v, len(v))
 	//}
-	s := runtime.GOOS
-	fmt.Println(s)
+	//week, _ := crawling.FutureWeek(57512)
+	//b, _ := json.Marshal(week)
+	//fmt.Println(string(b))
+
 }
 
 /*

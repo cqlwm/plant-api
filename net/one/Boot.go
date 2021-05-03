@@ -7,6 +7,7 @@ import (
 	"plant-api/net/one/handler/article"
 	"plant-api/net/one/handler/tool"
 	"plant-api/net/one/handler/user"
+	"plant-api/net/one/handler/weather"
 )
 
 func main() {
@@ -39,6 +40,7 @@ func main() {
 	tool.DistinguishHandler(r)  // 虫、草、药识别
 	user.UserHandler(r)         // 用户
 	article.ArticleHandler(r)   // 文章
+	weather.WeatherHandler(r)   // 天气
 
 	r.Run(config.Port)
 }
