@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"io"
+	"log"
 	"net/http"
 	"plant-api/net/one/config"
 	"plant-api/net/one/entry"
@@ -37,12 +38,14 @@ func Find(searchKey string) *entry.WeedResult {
 	weedResult := entry.WeedResult{}
 	exist := config.CollectionGet(searchKey, &weedResult, config.WeedKey, config.WeedColl)
 	if exist {
+		log.Println("Find CollectionGet exist ", weedResult)
 		return &weedResult
 	}
 
 	// 未找到，实时爬取
 	body, err := disease(searchKey)
 	if err != nil {
+		log.Println("disease(searchKey) 未找到，实时爬取 ", err.Error())
 		return &entry.WeedResult{}
 	}
 
@@ -113,11 +116,14 @@ func Find(searchKey string) *entry.WeedResult {
 
 	info, err := json.Marshal(weed)
 	infoStr := string(info)
+	log.Println("实时爬取到内容 1 ", infoStr)
 	save := config.CollectionSave(searchKey, infoStr, config.WeedKey, config.WeedColl)
 
 	if save {
 		config.CollectionGet(searchKey, &weedResult, config.WeedKey, config.WeedColl)
 	}
+
+	log.Println("实时爬取到内容 2 ", weedResult)
 
 	//fmt.Println("实时爬虫 ", weedResult)
 	return &weedResult

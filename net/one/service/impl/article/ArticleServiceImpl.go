@@ -36,6 +36,16 @@ func (as *ArticleService) KeyFind(searchID string, keywords []string, page int) 
 		word = selectByKeyWord(keywords)
 	}
 
+	if len(word) == 0 {
+		return "", word, entry.ForkPage{
+			Current:  0,
+			Over:     0,
+			PageSize: 0,
+			Total:    0,
+			Content:  nil,
+		}
+	}
+
 	forkPage := entry.ForkPage{}
 	forkPage.Set(page, pageSize, len(word))
 

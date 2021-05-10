@@ -2,6 +2,7 @@ package article
 
 import (
 	"github.com/gin-gonic/gin"
+	"log"
 	"mime/multipart"
 	"plant-api/net/one/config"
 	"plant-api/net/one/service/impl/article"
@@ -12,6 +13,7 @@ import (
 // handler路由配置
 func ArticleHandler(e *gin.Engine) {
 	e.POST(config.DistinguishHandler2search, search)
+	e.GET(config.DistinguishHandler2search, search2)
 }
 
 var service = article.ArticleService{}
@@ -56,8 +58,18 @@ func searchParam(c *gin.Context) *searchForm {
 		resultForm.searchId = form.Value["searchId"][0]
 		if len(resultForm.searchId) > 0 {
 			resultForm.pwd = 3
+			log.Println("ID搜索")
 			return &resultForm
 		}
+	}
+
+	// 关键词搜索
+	valueArr := form.Value["searchText"]
+	if len(valueArr) != 0 {
+		resultForm.pwd = 2
+		resultForm.keyword = valueArr[0]
+		log.Println("关键词搜索")
+		return &resultForm
 	}
 
 	file := form.File["file"]
@@ -65,18 +77,12 @@ func searchParam(c *gin.Context) *searchForm {
 		resultForm.pwd = 1
 		resultForm.file = file[0]
 		resultForm.pwd = 1
+		log.Println("图像搜索")
 		return &resultForm
 	}
-	// 关键词搜索
-	valueArr := form.Value["searchText"]
-	if len(valueArr) == 0 {
-		resultForm.isErr = true
-		resultForm.errInfo = &config.Pricture_WORD_ERROR
-		return &resultForm
-	}
-	resultForm.pwd = 2
-	resultForm.keyword = valueArr[0]
 
+	resultForm.isErr = true
+	resultForm.errInfo = &config.Pricture_WORD_ERROR
 	return &resultForm
 }
 
@@ -130,6 +136,21 @@ func searchById(searchId string, page int) map[string]interface{} {
 	resultOver["article"] = dbs
 	resultOver["page"] = forkPage
 	return resultOver
+}
+
+func search2(c *gin.Context) {
+	searchText := c.Query("searchText")
+	searchId := c.Query("searchId")
+	page := c.Query("page")
+	pageNum := 1
+	if len(page) != 0 {
+		n, err := strconv.Atoi(page)
+		if err == nil {
+			pageNum = n
+		}
+	}
+	words := searchWord(searchId, searchText, pageNum)
+	config.Ok2(c, words)
 }
 
 // 资讯搜索

@@ -57,6 +57,9 @@ func FutureWeek(code int) (*WeatherResult, error) {
 	weekInfo.Find("#day0 .hour3").Each(func(i int, selection *goquery.Selection) {
 		day := selection.Text()
 		w := info24time(day)
+		src, _ := selection.Find("img").Attr("src")
+		src = deImgSrc(src)
+		w.Img = src
 		if w.Rain > 0 && hour == 0 {
 			// 未来多少小时会降雨
 			hour = (i + 1) * 3
@@ -76,8 +79,8 @@ func FutureWeek(code int) (*WeatherResult, error) {
 		// 天气图标
 		descImg, _ := selection.Find("img").First().Attr("src")
 		descImg = descImage(descImg)
-		// 湿度 TODO 有改过
-		selector := fmt.Sprintf("#day%d > div:nth-child(2) > div:nth-child(8)", i)
+		// 湿度
+		selector := fmt.Sprintf("#day%d > div:nth-child(1) > div:nth-child(8)", i)
 		text := weekInfo.Find(selector).Text()
 		h := humidityStr(text)
 		// 气温
@@ -112,7 +115,7 @@ func FutureWeek(code int) (*WeatherResult, error) {
 
 	info := realInfo(code)
 
-	wr := WeatherResult{weather1s, weather2s, rainNoticeEntry, info}
+	wr := WeatherResult{weather1s, weather2s, &rainNoticeEntry, info}
 
 	return &wr, nil
 }
@@ -389,7 +392,7 @@ func stateStr(s string) (string, string) {
 type WeatherResult struct {
 	W1     []weather1
 	W2     []weather2
-	Notice rainNotice
+	Notice *rainNotice
 	Info   map[string]interface{}
 }
 
@@ -521,17 +524,18 @@ type city struct {
 }
 
 type weather1 struct {
-	Humidity    int    // 湿度
-	Temperature string // 温度区间
-	State       string // 天气
-	StateImage  string // 天气图标
-	Time        string // 时间
+	Humidity    float64 // 湿度
+	Temperature string  // 温度区间
+	State       string  // 天气
+	StateImage  string  // 天气图标
+	Time        string  // 时间
 }
 
 type weather2 struct {
 	Rain        float64 // 降水
 	Temperature float64 // 温度
-	Time        string  // 时间
+	Img         string
+	Time        string // 时间
 }
 
 type temperature24Time struct {
@@ -544,8 +548,8 @@ type temperature24Time struct {
 	windScale     string  // 强度
 }
 
-func humidityStr(h string) int {
-	h = strings.ReplaceAll(h, "%  ", " ")
+func humidityStr(h string) float64 {
+	h = strings.ReplaceAll(h, "%", " ")
 	h = strings.TrimSpace(h)
 	split := strings.Split(h, " ")
 	var sum float64 = 0
@@ -557,7 +561,7 @@ func humidityStr(h string) int {
 		}
 	}
 	sum = sum / float64(len(split))
-	return int(sum)
+	return sum
 }
 
 func dateStr(date string) string {

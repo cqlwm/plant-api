@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"plant-api/net/one/config"
 	"plant-api/net/one/handler"
 	"plant-api/net/one/handler/article"
@@ -11,6 +12,9 @@ import (
 )
 
 func main() {
+
+	log.SetFlags(log.Lshortfile | log.LstdFlags)
+
 	// 参数加载
 	config.OsLoad()
 

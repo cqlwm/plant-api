@@ -3,6 +3,7 @@ package tool
 import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"log"
 	"mime/multipart"
 	"plant-api/net/one/config"
 	"plant-api/net/one/entry"
@@ -24,20 +25,24 @@ func DistinguishHandler(e *gin.Engine) {
 func getQueryParam(c *gin.Context) (*multipart.FileHeader, string, config.CM) {
 	form, err := c.MultipartForm()
 	if err != nil {
+		log.Println(&config.FORM_ERROR, err)
 		return nil, "", &config.FORM_ERROR
 	}
 	// 获取图片
 	pictures := form.File["picture"]
 	if pictures == nil {
+		log.Println(&config.PICTURE_PARAM_ERROR, err)
 		return nil, "", &config.PICTURE_PARAM_ERROR
 	}
 	_, isImage := util.IsImage(pictures[0].Filename)
 	if !isImage {
+		log.Println(&config.PICTURE_FORMAT_ERROR)
 		return nil, "", &config.PICTURE_FORMAT_ERROR
 	}
 	// 获取选择参数
 	choice := form.Value["Choice"]
 	if choice == nil || len(choice) == 0 || !isFourOne(choice[0]) {
+		log.Println(&config.PARAM_ERROR)
 		return nil, "", &config.PARAM_ERROR
 	}
 	return pictures[0], choice[0], nil
@@ -60,6 +65,7 @@ func isFourOne(choice string) bool {
 func query(c *gin.Context) {
 	claims, errParm := util.UserInfo(c)
 	if errParm != nil {
+		log.Println(errParm)
 		config.Error2(c, errParm.Error())
 		return
 	}
@@ -67,6 +73,7 @@ func query(c *gin.Context) {
 	file, choice, ret := getQueryParam(c)
 
 	if ret != nil {
+		log.Println(ret)
 		config.Error(c, ret, nil)
 		return
 	}
@@ -74,30 +81,36 @@ func query(c *gin.Context) {
 	// 保存图片 TODO 图片识别之后生成日志
 	completeNewName := util.Uuid(file.Filename) + util.Extension(file.Filename)
 	uploadSave := savePath + completeNewName
-	_ = c.SaveUploadedFile(file, uploadSave)
+	err1 := c.SaveUploadedFile(file, uploadSave)
+
+	// TODO
+	if err1 != nil {
+		log.Println(err1)
+		config.Error2(c, "server save image fail, may be picture is too big")
+		return
+	}
 
 	// 害虫识别
 	ds := pest.DistinguishServiceImpl{}
-	//var resArr []entry.PestSimilarity
 
 	var err error
 	var obj interface{}
+
 	// "pest", "weeds", "pesticide", "estimate":  根据不同模式调用不同识别模块
 	switch choice {
 	case "pest":
 		obj, err = ds.Pest(uploadSave)
-		//obj = resArr
 	case "weeds":
 		obj, err = nil, nil
 	case "disease":
-		disease := ds.Disease(uploadSave, completeNewName)
+		disease, err := ds.Disease(uploadSave, completeNewName)
 		//ret = disease
-		if disease == nil {
-			config.Error2(c, nil)
+		if err != nil {
+			log.Println(err)
+			config.Error2(c, err.Error())
 			return
 		}
 		obj = disease
-		return
 	case "pesticide":
 		obj, err = nil, nil
 	case "estimate":
@@ -105,11 +118,15 @@ func query(c *gin.Context) {
 	}
 
 	if err != nil {
-		config.Error2(c, nil)
+		log.Println("choice run", err.Error())
+		config.Error2(c, err)
 		return
 	}
 
 	objByte, err := json.Marshal(obj)
+	if err != nil {
+		log.Println("json.Marshal(obj) ", err)
+	}
 
 	// 生成操作日志
 	ilog := entry.IdentifyLog{

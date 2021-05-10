@@ -21,11 +21,10 @@ type CustomClaims struct {
 // 生成Token
 func BuildToken(userId int) string {
 	//生成token
-	maxAge := 60 * 60 * 24
 	customClaims := &CustomClaims{
 		UserId: userId, //用户id
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Duration(maxAge) * time.Second).Unix(), // 过期时间，必须设置
+			ExpiresAt: time.Now().Add(60 * 60 * 24 * 100 * time.Second).Unix(), // 过期时间，必须设置
 		},
 	}
 

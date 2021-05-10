@@ -80,7 +80,7 @@ func Post(url string, file string) (string, error) {
 func PostFlower(image string) (*entry.WeedFlowerResult, error) {
 	srcByte, err := ioutil.ReadFile(image)
 	if err != nil {
-		log.Println(err)
+		log.Println("PostFlower srcByte ", err)
 		return nil, err
 	}
 	p1 := base64.StdEncoding.EncodeToString(srcByte)
@@ -91,7 +91,7 @@ func PostFlower(image string) (*entry.WeedFlowerResult, error) {
 	url := "http://plantgw.nongbangzhu.cn/plant/recognize2"
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(res)))
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("PostFlower NewRequest ", err)
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
@@ -105,15 +105,16 @@ func PostFlower(image string) (*entry.WeedFlowerResult, error) {
 
 	bodys, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("响应：", err)
+		log.Println("响应：", err)
 		return nil, err
 	}
-	fmt.Println(string(bodys))
 	flower := entry.WeedFlowerResult{}
 	err = json.Unmarshal(bodys, &flower)
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println("PostFlower OK ", flower)
 	return &flower, nil
 }
 
@@ -149,38 +150,61 @@ func PostWeedsInfo() {
 // 病害识别
 // http://senseagro.market.alicloudapi.com/api/senseApi
 func Disease(crop_id string, image_url string) (*disResult, error) {
+	ret, err := Disease0(crop_id, image_url)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	result := buildResult(ret)
+	return &result, nil
+}
+func Disease0(crop_id string, image_url string) (string, error) {
 	url := "http://senseagro.market.alicloudapi.com/api/senseApi"
 
 	client := &http.Client{}
 
 	requestBody := fmt.Sprintf("crop_id=%s&image_url=%s", crop_id, image_url)
+	log.Println("param ", requestBody)
+
 	req, err := http.NewRequest("POST", url, strings.NewReader(requestBody))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
 	req.Header.Set("Authorization", "APPCODE 942f9103297e4f508570e3dd2272bf40")
 	if err != nil {
-		fmt.Println(err)
-		return nil, err
+		log.Println("Disease(crop_id string, image_url string)  request err ", err)
+		return "", err
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
-		return nil, err
+		log.Println("get do ", err)
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("响应 ", err)
-		return nil, err
+		log.Println("响应 ", err)
+		return "", err
 	}
-	fmt.Println(string(body))
+	sBody := fmt.Sprintf("%s", string(body))
+	//log.Println("request ok ", string(body))
+	//result := disResult{}
+	//_ = json.Unmarshal([]byte(sBody), &result)
+	//if err != nil {
+	//	log.Println("json fail", err.Error())
+	//	return nil, err
+	//}
+	//result := buildResult(sBody)
+	//log.Println(result)
+	return sBody, nil
+}
+
+func buildResult(s string) disResult {
+	// s := `{"status":"1","msg":"操作成功","content":{"result":"蚧壳虫","score":90.59}}`
 	result := disResult{}
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		return nil, err
-	}
-	return &result, nil
+	_ = json.Unmarshal([]byte(s), &result)
+	log.Println(result)
+	return result
 }
 
 // {"status":"1","msg":"操作成功","content":{"result":"柑橘树脂病","score":94.46}}

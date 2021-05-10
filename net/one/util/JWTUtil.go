@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"log"
 	"time"
 )
 
@@ -59,12 +60,14 @@ func UserInfo(c *gin.Context) (*CustomClaims, error) {
 	token := c.GetHeader("token")
 	if len(token) == 0 {
 		// 没有Token参数
-		return nil, errors.New("")
+		log.Println("没有Token参数", token)
+		return nil, errors.New("没有Token参数")
 	}
 
 	claims, err := ParseToken(token)
 	if err != nil {
 		// Token无效
+		log.Println("没有Token参数", err)
 		return nil, err
 	}
 

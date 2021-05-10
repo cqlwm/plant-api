@@ -56,8 +56,9 @@ func (dsi *DistinguishServiceImpl) Weeds(pestImage string) {
 }
 
 // 病害识别服务
-func (dsi *DistinguishServiceImpl) Disease(pestImage string, completeNewName string) *entry.WeedResult {
+func (dsi *DistinguishServiceImpl) Disease(pestImage string, completeNewName string) (*entry.WeedResult, error) {
 	res, err := util.PostFlower(pestImage)
+	log.Println("PostFlower  ", res)
 	// 辨认果木
 	key := ""
 	if err == nil {
@@ -86,13 +87,15 @@ func (dsi *DistinguishServiceImpl) Disease(pestImage string, completeNewName str
 	dire, err := util.Disease(key, config.ReUrlImage+completeNewName)
 	if err != nil {
 		log.Println(err)
-		return nil
+		return nil, err
 	}
 	diseaseName := dire.Content.Result
+
+	log.Println("Disease diseaseName ", diseaseName)
 
 	// 百度百科爬虫
 	//config.MongoDBConn()
 	//config.DeleteAll(config.WeedColl)
 	find := crawling.Find(diseaseName)
-	return find
+	return find, nil
 }

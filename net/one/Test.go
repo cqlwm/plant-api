@@ -21,7 +21,7 @@ import (
 	"strings"
 )
 
-func main00() {
+func main() {
 	//participle := util.SafeParticiple("板栗果仁腐烂是什么病害，怎么防治？")
 	//for k, v := range participle {
 	//	fmt.Println(k, v, len(v))
@@ -30,12 +30,12 @@ func main00() {
 	//b, _ := json.Marshal(week)
 	//fmt.Println(string(b))
 
-}
+	//d, _ := util.Disease("1", `https://graceful.top/plant/image/item/2d9e2035c2d6323696752cd263941785.jpg`)
+	//// log.Println("e ", e.Error())
+	//log.Println(d)
+	crawling.BchInfo("33")
 
-/*
-什么
-原因
-*/
+}
 
 type TestSet struct {
 	Id   int

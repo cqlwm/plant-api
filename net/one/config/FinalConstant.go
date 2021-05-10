@@ -35,6 +35,10 @@ var ImageTag = "ThisImageTag:"
 // 文章搜索IDS
 var ArticleIds = "ArticleSearchId:"
 
+// 天气Key
+var WeatherRedisKey = "WeatherRedisKey-code:"
+var SimpleWeatherRedisKey = "SimpleWeatherRedisKey-code:"
+
 // Windows环境加载
 func OsLoad() {
 	osName := runtime.GOOS
